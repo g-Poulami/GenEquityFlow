@@ -1,18 +1,26 @@
-# GenEquityFlow: A Reproducible Pipeline for Ancestry-Aware Biomarker Analysis
+# GenEquityFlow: Ancestry-Aware Biomarker Pipeline
+![CI](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml/badge.svg)
+![Workflow: Snakemake](https://img.shields.io/badge/Workflow-Snakemake-green)
+![Environment: Conda](https://img.shields.io/badge/Environment-Conda-blue)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
-**GenEquityFlow** is an automated Snakemake pipeline designed to identify the "Generalizability Gap" in cancer biomarkers across diverse ancestral populations.
+GenEquityFlow is an automated bioinformatics pipeline designed to quantify the Generalizability Gap in cancer genomics. By comparing biomarker frequencies across diverse ancestral populations, this tool highlights healthcare disparities and the scientific necessity of inclusive cohort design.
 
-### Key Features
-* **Scalable Workflow**: Automates alignment (BWA), variant calling (BCFtools), and functional tagging.
-* **Reproducibility**: Uses Conda environments to ensure consistent execution across different computational setups.
-* **Clinical Insight**: Generates statistical reports and visualizations to highlight ancestry-linked differences in biomarker frequency.
+## Project Overview
+The pipeline processes high-throughput sequencing data from raw FASTQ files to a final population-level statistical report and visualization.
 
-### Pipeline Architecture
-1. **Alignment & Processing**: Maps raw reads to hg38 and performs quality sorting.
-2. **Variant Analysis**: Implements a multiallelic calling model with QUAL > 30 filtering.
-3. **Functional Annotation**: Injects functional metadata (ANN fields) for impact assessment.
-4. **Generalizability Analysis**: Compares allele frequencies between South Asian and European cohorts.
+## Key Features
+* Scalable Automation: Managed by Snakemake for reproducible execution.
+* Rigorous Filtering: Implements a multiallelic model with strict quality thresholds (QUAL > 30).
+* Functional Annotation: Identifies variants that plausibly alter protein function.
+* CI/CD Integrated: Automated linting and syntax checking via GitHub Actions.
 
-### Requirements
-* Snakemake
-* Conda / Mamba
+## Repository Structure
+* Snakefile: Core logic defining the ten ordered steps of the pipeline.
+* config.yaml: Parameters for samples and filtering.
+* envs/: Conda YAML files for a fully traceable computational environment.
+* .github/workflows/: CI/CD configuration for automated testing.
+
+## Getting Started
+1. Clone: git clone https://github.com/g-Poulami/GenEquityFlow.git
+2. Run: snakemake --use-conda --cores 4
