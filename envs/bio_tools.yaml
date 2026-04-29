@@ -1,0 +1,10 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bwa=0.7.17
+  - samtools=1.17
+  - bcftools=1.17
+  - python=3.9
+  - pandas
+  - matplotlib

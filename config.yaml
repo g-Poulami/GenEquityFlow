@@ -1,0 +1,7 @@
+reference: "data/hg38.fa"
+cohorts:
+  South_Asian: ["SA_01", "SA_02", "SA_03"]
+  European: ["EU_01", "EU_02", "EU_03"]
+filtering:
+  min_qual: 30
+biomarkers: ["TP53", "BRCA1", "PIK3CA"]
