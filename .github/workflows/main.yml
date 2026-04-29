@@ -10,8 +10,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-      - name: Install Snakemake
-        run: pip install snakemake pulp
+          python-version: '3.10'
+      - name: Install Snakemake and Dependencies
+        run: |
+          pip install snakemake==7.32.4 pulp==2.7.0
       - name: Lint Snakefile
         run: snakemake --lint
