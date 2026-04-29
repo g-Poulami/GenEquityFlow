@@ -13,9 +13,11 @@ rule align_and_sort:
         fq = "data/{sample}.fastq.gz"
     output:
         bam = "results/mapped/{sample}.sorted.bam"
+    log:
+        "logs/align/{sample}.log"
     conda: "envs/bio_tools.yaml"
     shell:
-        "bwa mem {input.ref} {input.fq} | samtools sort -o {output.bam}"
+        "bwa mem {input.ref} {input.fq} 2> {log} | samtools sort -o {output.bam} 2>> {log}"
 
 rule call_variants:
     input:
@@ -23,9 +25,11 @@ rule call_variants:
         bam = "results/mapped/{sample}.sorted.bam"
     output:
         vcf = "results/variants/{sample}.vcf"
+    log:
+        "logs/vcf/{sample}.log"
     conda: "envs/bio_tools.yaml"
     shell:
-        "bcftools mpileup -f {input.ref} {input.bam} | bcftools call -mv -Ov -o {output.vcf}"
+        "bcftools mpileup -f {input.ref} {input.bam} 2> {log} | bcftools call -mv -Ov -o {output.vcf} 2>> {log}"
 
 rule filter_and_annotate:
     input:
@@ -34,16 +38,20 @@ rule filter_and_annotate:
         ann = "results/annotated/{sample}.ann.vcf"
     params:
         qual = config["filtering"]["min_qual"]
+    log:
+        "logs/annotate/{sample}.log"
     conda: "envs/bio_tools.yaml"
     shell:
-        "bcftools filter -i 'QUAL>{params.qual}' {input.vcf} | "
-        "awk 'BEGIN {{FS=\"\t\"; OFS=\"\t\"}} /^#/ {{print}} !/^#/ {{$8=$8\";ANN=MISSENSE\"; print}}' > {output.ann}"
+        "bcftools filter -i 'QUAL>{params.qual}' {input.vcf} 2> {log} | "
+        "awk 'BEGIN {{FS=\"\\t\"; OFS=\"\\t\"}} /^#/ {{print}} !/^#/ {{$8=$8\";ANN=MISSENSE\"; print}}' > {output.ann} 2>> {log}"
 
 rule compare_populations:
     input:
         vcfs = expand("results/annotated/{sample}.ann.vcf", sample=SAMPLES)
     output:
         csv = "results/reports/generalizability_gap.csv"
+    log:
+        "logs/compare_populations.log"
     script:
         "scripts/gap_analysis.py"
 
@@ -52,6 +60,8 @@ rule visualize_gap:
         csv = "results/reports/generalizability_gap.csv"
     output:
         plot = "results/plots/biomarker_comparison.png"
+    log:
+        "logs/visualize_gap.log"
     conda: "envs/bio_tools.yaml"
     script:
         "scripts/plot_gap.py"
