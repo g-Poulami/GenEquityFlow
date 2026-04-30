@@ -52,6 +52,7 @@ rule compare_populations:
         csv = "results/reports/generalizability_gap.csv"
     log:
         "logs/compare_populations.log"
+    conda: "envs/bio_tools.yaml"
     script:
         "scripts/gap_analysis.py"
 
