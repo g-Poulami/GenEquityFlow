@@ -1,0 +1,14 @@
+type: object
+properties:
+  reference: {type: string}
+  cohorts:
+    type: object
+    patternProperties:
+      "^.*$": {type: array, items: {type: string}}
+  filtering:
+    type: object
+    properties:
+      min_qual: {type: integer, minimum: 0}
+required:
+  - reference
+  - cohorts

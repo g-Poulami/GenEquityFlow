@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bwa
+  - samtools
+  - bcftools
+  - snpeff=5.1
+  - python=3.9
+  - pandas
+  - matplotlib
+  - seaborn
