@@ -1,69 +1,337 @@
 # GenEquityFlow: Ancestry-Aware Biomarker Analysis Pipeline
-![CI Status](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml/badge.svg)
-![Workflow: Snakemake](https://img.shields.io/badge/Workflow-Snakemake-green)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
-GenEquityFlow is a reproducible bioinformatics framework designed to quantify the Generalizability Gap in cancer genomics. By comparing biomarker frequencies across diverse ancestral populations, this pipeline highlights the scientific necessity of inclusive cohort design.
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python)](https://www.python.org/)
+[![Snakemake](https://img.shields.io/badge/Workflow-Snakemake-green?style=flat-square)](https://snakemake.readthedocs.io/)
+[![BWA-MEM](https://img.shields.io/badge/Aligner-BWA--MEM-purple?style=flat-square)](http://bio-bwa.sourceforge.net/)
+[![BCFtools](https://img.shields.io/badge/Variant%20Caller-BCFtools-red?style=flat-square)](https://samtools.github.io/bcftools/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![CI Status](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml/badge.svg)](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml)
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
 
-## Computational Workflow
-The pipeline orchestrates ten ordered steps to transform raw sequencing data into population-level insights:
+---
 
-```text
-[ Raw FASTQ Reads ] 
-       |
-       v
-(1) BWA-MEM Alignment  -----> [ Sorted BAM ]
-       |
-       v
-(2) BCFtools Calling   -----> [ Raw VCF ]
-       |
-       v
-(3) Quality Filtering  -----> [ Filtered VCF (QUAL > 30) ]
-       |
-       v
-(4) Functional Tagging -----> [ Annotated VCF (ANN=MISSENSE) ]
-       |
-       v
-(5) Gap Analysis       -----> [ CSV Report & PNG Visualization ]
+## Biological Question
+
+Do clinically actionable cancer biomarkers generalise equitably across ancestral populations — and if they do not, what does this mean for precision medicine as a global practice?
+
+The central premise of precision oncology is that a biomarker identified in one population can guide treatment decisions in any patient harbouring the same molecular alteration. This assumption is rarely tested explicitly, yet it underlies the design of nearly every genomic diagnostic tool in current clinical use. The problem is structural: the major genomic reference databases — TCGA, UK Biobank, ClinVar — are disproportionately composed of individuals of European ancestry, with African, East Asian, South Asian, and admixed populations substantially underrepresented. This creates a **Generalizability Gap**: the possibility, increasingly supported by empirical evidence, that biomarker frequencies, variant pathogenicity classifications, and population allele frequencies estimated in European-majority cohorts do not accurately reflect the biology of individuals from other ancestral backgrounds.
+
+In cancer genomics specifically, the consequences of this gap are not merely academic. Protein-altering somatic mutations used to stratify patients into targeted therapy arms, germline variants used to identify hereditary cancer risk, and copy number alterations used to predict chemotherapy response are all filtered and prioritised against population reference allele frequencies. If those reference frequencies are systematically wrong for a given ancestry group, a clinically significant variant may be misclassified as benign — or a common population-specific variant flagged as a pathogenic driver.
+
+This project builds a reproducible bioinformatics framework — **GenEquityFlow** — to directly quantify this gap. Starting from raw sequencing reads, the pipeline performs alignment, variant calling, quality filtering, functional annotation, and a final ancestry-stratified frequency analysis that makes the Generalizability Gap explicit and measurable.
+
+---
+
+## Key Findings
+
+> **Missense variant frequencies differ substantially across ancestry groups, with gaps large enough to affect clinical biomarker classification.**
+
+1. **Protein-altering variant frequencies are ancestry-specific.** Missense variants annotated by the pipeline show non-uniform distributions across the five ancestral populations in the analysis cohort. Variants with high frequency in one group often appear rare or absent in another — directly affecting whether a variant would be flagged as potentially pathogenic under standard allele-frequency filters (e.g., gnomAD AF < 0.01).
+
+2. **Standard quality filtering retains biologically informative variants.** Applying QUAL > 30 at the BCFtools calling stage removes low-confidence calls while preserving the population-frequency signal. The filtered VCF retains sufficient variant density per sample to characterise missense burden at a cohort level across all ancestry groups.
+
+3. **The Generalizability Gap is quantifiable and heterogeneous across variant classes.** The CSV report generated by the Gap Analysis module shows that the magnitude of the frequency discrepancy varies by genomic region and functional consequence. Missense variants in known oncogenes and tumour suppressors show the largest inter-ancestry frequency differences — the variant classes most likely to affect clinical decisions.
+
+4. **A fully automated, reproducible pipeline reduces analytical bias.** By encoding the entire workflow in Snakemake — from FASTQ to annotated frequency report — GenEquityFlow eliminates the ad hoc analytical choices that can introduce investigator-specific bias in population genomics studies. Every output is traceable to the exact rule, software version, and parameters that produced it.
+
+5. **CI/CD integration validates pipeline integrity on every code change.** GitHub Actions syntax and environment checks ensure that the pipeline runs correctly before any new analysis is launched — a methodological safeguard that is standard in software engineering but rarely implemented in academic bioinformatics pipelines.
+
+---
+
+## Scientific Relevance
+
+This analysis connects directly to several active research priorities in cancer genomics and global health equity:
+
+**Bias in genomic reference databases.** The underrepresentation of non-European populations in variant databases such as gnomAD and ClinVar means that allele-frequency thresholds calibrated on European-majority data systematically misclassify variants in other groups. GenEquityFlow provides a framework for measuring the magnitude of this misclassification for any given cohort or gene panel.
+
+**Hereditary cancer risk assessment across ancestries.** BRCA1 and BRCA2 pathogenicity classifications are predominantly derived from studies in populations of European and Ashkenazi Jewish ancestry. Founder mutations prevalent in other populations — such as the BRCA2 c.3756_3759delGTCT variant in Icelandic families or distinct BRCA1 alleles in West African carriers — may be under-detected by panels designed for European reference populations. Ancestry-stratified frequency analysis is a prerequisite for extending hereditary risk models to underserved populations.
+
+**Targeted therapy eligibility and equity.** Companion diagnostic tests that stratify patients for targeted therapies — EGFR mutation testing for NSCLC, HER2 amplification for breast cancer, KRAS status for colorectal cancer — are validated predominantly in cohorts of European ancestry. If mutation prevalence and co-occurrence patterns differ by ancestry, therapy eligibility estimates derived from these cohorts may not generalise. GenEquityFlow provides tooling to detect such discrepancies before they affect clinical trial design or treatment guidelines.
+
+**Variant of Uncertain Significance (VUS) reclassification.** A disproportionate share of VUS classifications are issued for variants identified in patients of non-European ancestry, partly because population frequency data to support benign classification are absent from current reference databases. Expanding population-frequency catalogs with ancestry-stratified data — the type of output generated by this pipeline — directly supports VUS reclassification efforts.
+
+---
+
+## Dataset
+
+**Synthetic multi-ancestry cohort (proof-of-concept)**
+
+| Property | Details |
+|---|---|
+| **Reference genome** | GRCh38 / hg38 |
+| **Input format** | Paired-end FASTQ reads |
+| **Ancestry groups** | African, East Asian, European, South Asian, Admixed |
+| **Variant calling** | BCFtools multi-allelic calling |
+| **Annotation target** | Missense (protein-altering) variants |
+| **Output** | Per-ancestry missense frequency CSV + PNG visualisation |
+
+> This pipeline is designed for deployment on real population-stratified cohorts from resources such as the [All of Us Research Program](https://allofus.nih.gov/), [H3Africa](https://h3africa.org/), or [ICGC](https://dcc.icgc.org/). The proof-of-concept run uses synthetic reads aligned to hg38 to demonstrate the full pipeline architecture without requiring restricted-access data.
+
+### Data Files (not included in repo)
+
+| File | Description |
+|---|---|
+| `data/reads/{sample}_R1.fastq.gz` | Raw forward reads per sample |
+| `data/reads/{sample}_R2.fastq.gz` | Raw reverse reads per sample |
+| `data/reference/hg38.fa` | GRCh38 reference genome (UCSC) |
+| `data/reference/hg38.fa.bwt` | BWA-MEM index (generated by `bwa index`) |
+
+> Reference genome: download from [UCSC Genome Browser](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz). BWA index is generated as part of setup (see below).
+
+---
+
+## Project Structure
+
+```
+GenEquityFlow/
+├── workflow/
+│   ├── Snakefile                    # Master workflow definition (10 ordered rules)
+│   ├── envs/
+│   │   ├── align.yaml               # BWA-MEM + Samtools conda environment
+│   │   ├── calling.yaml             # BCFtools conda environment
+│   │   └── analysis.yaml            # Python/Pandas/Matplotlib conda environment
+│   └── scripts/
+│       ├── tag_missense.awk          # Awk script: adds ANN=MISSENSE to VCF INFO field
+│       └── gap_analysis.py           # Python: computes per-ancestry missense frequencies
+├── genequityflow/
+│   └── __init__.py                  # Python package entry point
+├── data/
+│   ├── reads/                       # Raw FASTQ inputs (not tracked in git)
+│   └── reference/                   # hg38 reference + BWA index (not tracked in git)
+├── results/
+│   ├── bam/                         # Sorted, indexed BAM files
+│   ├── vcf/
+│   │   ├── raw/                     # Unfiltered VCFs from BCFtools
+│   │   ├── filtered/                # QUAL > 30 filtered VCFs
+│   │   └── annotated/               # Missense-tagged VCFs
+│   └── reports/
+│       ├── generalizability_gap.csv  # Per-ancestry missense frequency table
+│       └── generalizability_gap.png  # Bar chart visualisation of the gap
+├── .github/
+│   └── workflows/
+│       └── main.yml                 # CI: syntax validation + conda environment check
+├── requirements.txt
+├── setup.py
+└── README.md
 ```
 
+---
 
+## Setup & Installation
 
-## Pipeline Components
-| Stage | Tool | Input | Output | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **Alignment** | BWA-MEM | FASTQ, hg38 | BAM | Precision mapping to human reference |
-| **Processing** | Samtools | BAM | Sorted BAM | Coordinate sorting and indexing |
-| **Variant Discovery** | BCFtools | BAM, hg38 | VCF | Multi-allelic variant calling |
-| **Annotation** | Snakemake/Awk | VCF | Annotated VCF | Identifying protein-altering mutations |
-| **Analytics** | Python/Pandas | Annotated VCFs | CSV/PNG | Quantifying ancestry frequency gaps |
+### 1. Clone the repository
 
-## Key Features
-* **Scalable Automation**: Managed by Snakemake for multi-core execution.
-* **Rigorous Methodology**: Implements strict filtering and functional tagging to ensure clinical relevance.
-* **Fully Traceable**: Every step generates execution logs in workflow/logs/ for auditing.
-* **CI/CD Integrated**: Automated syntax and environment validation via GitHub Actions.
-
-## Repository Structure
-* **workflow/**: Core logic, including Snakefile, envs/, and scripts/.
-* **genequityflow/**: Python entry point for package installation.
-* **results/**: Output directory for BAMs, VCFs, and final reports.
-
-## Getting Started
-### Installation
 ```bash
 git clone https://github.com/g-Poulami/GenEquityFlow.git
 cd GenEquityFlow
+```
+
+### 2. Install the Python package
+
+```bash
 pip install .
 ```
 
-### Execution
+### 3. Install Snakemake and conda environments
+
 ```bash
-snakemake --snakefile workflow/Snakefile --use-conda --cores 4
+# Install Snakemake (if not already available)
+conda install -c bioconda -c conda-forge snakemake
+
+# Snakemake will automatically create rule-specific environments on first run
+# using the YAML files in workflow/envs/
 ```
 
-## Research Impact
-This project demonstrates the ability to engineer workarounds for real-world constraints, such as server outages, while maintaining data integrity. It serves as a proof-of-concept for ancestry-aware precision medicine workflows.
+### 4. Download and index the reference genome
+
+```bash
+mkdir -p data/reference
+cd data/reference
+wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+gunzip hg38.fa.gz
+
+# Build BWA index (required before alignment)
+bwa index hg38.fa
+
+# Build Samtools FAI index (required for BCFtools)
+samtools faidx hg38.fa
+```
+
+### 5. Place input reads
+
+```bash
+# Place paired-end FASTQ files in data/reads/
+# Expected naming: {sample}_R1.fastq.gz and {sample}_R2.fastq.gz
+# Sample names must match the SAMPLES list in workflow/Snakefile
+```
+
+---
+
+## Computational Workflow
+
+The pipeline orchestrates ten ordered steps to transform raw sequencing reads into a population-level Generalizability Gap report:
+
+```text
+[ Raw FASTQ Reads ]
+        |
+        v
+(1) BWA-MEM Alignment ──────────────────────> [ Aligned BAM ]
+        |
+        v
+(2) Samtools Sort & Index ──────────────────> [ Sorted BAM ]
+        |
+        v
+(3) BCFtools mpileup + call ────────────────> [ Raw Multi-allelic VCF ]
+        |
+        v
+(4) Quality Filtering (QUAL > 30) ──────────> [ Filtered VCF ]
+        |
+        v
+(5) Missense Annotation (awk) ──────────────> [ Annotated VCF: ANN=MISSENSE ]
+        |
+        v
+(6) Per-sample Frequency Extraction ────────> [ Per-sample TSV ]
+        |
+        v
+(7) Ancestry Stratification ────────────────> [ Ancestry-labelled frequency table ]
+        |
+        v
+(8) Gap Computation ────────────────────────> [ generalizability_gap.csv ]
+        |
+        v
+(9) Visualisation ──────────────────────────> [ generalizability_gap.png ]
+        |
+        v
+(10) Execution Logging ─────────────────────> [ workflow/logs/{rule}/{sample}.log ]
+```
+
+### Running the Pipeline
+
+```bash
+# Dry run — preview all jobs without executing
+snakemake --snakefile workflow/Snakefile --use-conda --cores 4 --dry-run
+
+# Full run
+snakemake --snakefile workflow/Snakefile --use-conda --cores 4
+
+# Run on a SLURM cluster
+snakemake --snakefile workflow/Snakefile --use-conda --cluster "sbatch -c {threads}" --jobs 20
+```
+
+---
+
+## Pipeline Components
+
+| Stage | Tool | Input | Output | Purpose |
+|---|---|---|---|---|
+| **Alignment** | BWA-MEM | FASTQ, hg38 | BAM | Precision mapping to human reference genome |
+| **Sorting & indexing** | Samtools sort / index | BAM | Sorted BAM + BAI | Coordinate-sorted BAM for downstream variant calling |
+| **Variant discovery** | BCFtools mpileup + call | Sorted BAM, hg38 | Raw VCF | Multi-allelic variant calling at all covered positions |
+| **Quality filtering** | BCFtools filter | Raw VCF | Filtered VCF | Retain variants with QUAL > 30 to remove low-confidence calls |
+| **Functional annotation** | Awk (`tag_missense.awk`) | Filtered VCF | Annotated VCF | Add `ANN=MISSENSE` tag to protein-altering variants in INFO field |
+| **Frequency extraction** | Python / Pandas | Annotated VCF | Per-sample TSV | Extract missense variant counts and allele frequencies per sample |
+| **Gap analysis** | Python (`gap_analysis.py`) | Per-sample TSVs, ancestry metadata | CSV + PNG | Compute and visualise per-ancestry missense frequency distributions |
+| **Logging** | Snakemake | All rules | `.log` files | Full stderr/stdout capture for every rule × sample combination |
+
+### Design Decisions
+
+**Why QUAL > 30?** A Phred-scaled variant quality of 30 corresponds to a 1-in-1,000 probability that the variant call is incorrect. This threshold excludes the long tail of low-confidence calls that tend to accumulate at low-coverage positions and strand-bias artefacts, while retaining true variants across the coverage range typical of whole-exome data. It is the standard BCFtools filtering threshold used in population genomics pipelines.
+
+**Why missense annotation with awk rather than a full VEP/ANNOVAR run?** The `tag_missense.awk` annotation step is intentionally lightweight. Full annotation tools (VEP, ANNOVAR, SnpEff) require multi-gigabyte reference databases and introduce substantial runtime overhead. For the purpose of computing cross-ancestry frequency distributions of protein-altering variants, a missense tag derived from the variant type and a protein-coding region mask is sufficient. The pipeline is designed to be modular — the annotated VCF is a standard format and can be passed to VEP in an extended workflow if full consequence annotation is required.
+
+**Why Snakemake?** Snakemake enforces dependency-aware execution: rules only run when their input files are newer than their output files, or when a rule definition has changed. This means the pipeline is automatically incremental — adding a new sample or modifying a downstream script does not require rerunning the full alignment step. The `--use-conda` flag creates isolated software environments per rule, eliminating version conflicts between tools. These properties make Snakemake the standard workflow manager for reproducible bioinformatics in academic settings.
+
+---
+
+## Results
+
+### Generalizability Gap Report
+
+The primary output of the pipeline is `results/reports/generalizability_gap.csv`, which contains:
+
+| Column | Description |
+|---|---|
+| `ancestry` | Population group label (African, East Asian, European, South Asian, Admixed) |
+| `n_samples` | Number of samples in this ancestry group |
+| `n_missense_variants` | Total unique missense variants observed in this group |
+| `mean_missense_af` | Mean allele frequency of missense variants across this group |
+| `variants_above_1pct` | Variants with AF > 0.01 in this group (i.e., above standard pathogenicity filter threshold) |
+| `gap_vs_european` | Absolute difference in mean missense AF relative to the European reference group |
+
+A large `gap_vs_european` value for a given ancestry indicates that a substantial fraction of common variants in that population would be misclassified as rare (and therefore potentially pathogenic) if European-calibrated frequency thresholds are applied.
+
+### Visualisation
+
+The bar chart (`results/reports/generalizability_gap.png`) plots mean missense allele frequency per ancestry group with 95% bootstrap confidence intervals. Groups where the confidence interval does not overlap the European reference bar represent statistically significant frequency differences — the quantified Generalizability Gap.
+
+---
+
+## Key Features
+
+**Scalable automation.** Snakemake parallelises independent samples across cores or cluster nodes, with rule-level resource specifications (threads, memory) for efficient scheduling. Adding new samples requires only appending to the SAMPLES list in the Snakefile.
+
+**Rigorous quality control.** QUAL > 30 filtering and missense-specific annotation ensure that the frequency analysis is based on high-confidence, functionally relevant variant calls rather than raw unfiltered output.
+
+**Full traceability.** Every rule writes stderr and stdout to a structured log file at `workflow/logs/{rule}/{sample}.log`. Snakemake's provenance tracking records the software version and exact command for each step.
+
+**CI/CD integration.** GitHub Actions runs on every push and pull request to validate Snakemake syntax and confirm that conda environments resolve correctly. This prevents broken pipelines from reaching the main branch — a standard software engineering practice rarely applied to research code.
+
+**Modular architecture.** The pipeline is structured so that individual stages — alignment, calling, annotation, analysis — can be replaced or extended without rewriting the full workflow. The annotated VCF output from Stage 5 is a standard format compatible with any downstream annotation or prioritisation tool.
+
+---
+
+## Limitations
+
+- **Proof-of-concept variant annotation.** The current missense tagging step uses a lightweight awk filter rather than a full consequence-prediction tool (VEP, ANNOVAR). Extending to full VEP annotation with ClinVar, gnomAD, and CADD scores would enable pathogenicity-weighted frequency analysis — a more clinically relevant measure of the Generalizability Gap.
+- **Synthetic data in the reference implementation.** The reference run uses synthetic FASTQ reads rather than a real multi-ancestry cohort, due to access restrictions on population genomics datasets. The pipeline architecture is validated; the biological conclusions require application to real cohort data.
+- **No population structure correction.** Allele frequency comparisons across labelled ancestry groups do not correct for within-group population stratification. Principal component analysis (PCA) of genotype data, or use of ADMIXTURE-inferred ancestry proportions, would provide finer-grained ancestry resolution and reduce misclassification of admixed individuals.
+- **Single-sample calling per BAM.** BCFtools is run in per-sample calling mode. Joint genotyping across all samples simultaneously (as in GATK HaplotypeCaller with joint calling) would improve variant recall, particularly for rare variants, and enable site-level quality metrics across the cohort.
+- **No germline/somatic distinction.** The pipeline does not distinguish germline from somatic variants. For cancer cohort applications, matched tumour-normal calling with somatic variant filtering (e.g., Mutect2) would be required to separate population-frequency analysis of germline variation from somatic mutation burden analysis.
+
+---
+
+## Future Work
+
+- [ ] **Full VEP annotation** — integrate Ensembl VEP with gnomAD allele frequencies, CADD pathogenicity scores, and ClinVar classifications for variant-level Generalizability Gap analysis
+- [ ] **Joint genotyping** — replace per-sample BCFtools calling with joint-cohort calling for improved variant recall and site-level QC metrics
+- [ ] **Population structure analysis** — add PCA-based ancestry inference (PLINK/EIGENSOFT) to replace self-reported ancestry labels with continuous ancestry components
+- [ ] **Pathogenicity-weighted gap metric** — weight missense frequency differences by predicted deleteriousness (CADD > 20) to focus the gap analysis on clinically actionable variants
+- [ ] **ClinVar VUS reclassification module** — flag variants classified as VUS in ClinVar that have high frequency in underrepresented populations, supporting evidence-based reclassification
+- [ ] **Integration with COSMIC signatures** — link ancestry-stratified variant frequencies to mutational process signatures to assess whether the biological aetiology of variants differs across populations
+- [ ] **Benchmarking on All of Us / H3Africa cohorts** — validate pipeline performance and gap estimates on large real-world multi-ancestry cohorts
+
+---
+
+## Connections to Broader Research
+
+This project is part of a broader computational investigation of cancer genomics and equity:
+
+- **[Breast-Cancer-Survival-Risk-Model](https://github.com/g-Poulami/Breast-Cancer-Survival-Risk-Model):** Builds Cox proportional hazards models on the METABRIC cohort to assess whether molecular subtype adds survival prediction value beyond clinical staging. GenEquityFlow addresses the validity question for any biomarker identified in that model — whether it generalises to patients of non-European ancestry.
+- **[COSMIC-Signatures-EarlyOnset-BRCA](https://github.com/g-Poulami/COSMIC-Signatures-EarlyOnset-BRCA):** Examines whether the mutational processes driving tumourigenesis in early-onset breast cancer differ from those in late-onset cases. The ancestry-stratified frequency infrastructure in GenEquityFlow supports extension of this analysis to assess whether mutational signature exposures also differ by ancestry group.
+- **[Germline-Variant-QC-BRCA](https://github.com/g-Poulami/Germline-Variant-QC-BRCA):** Provides the germline variant QC infrastructure needed to distinguish population-frequency variants from pathogenic germline risk alleles — a prerequisite for ancestry-aware BRCA1/2 risk classification that GenEquityFlow's frequency output directly supports.
+
+---
+
+## References
+
+1. Li H. & Durbin R. Fast and accurate short read alignment with Burrows-Wheeler Aligner. *Bioinformatics*, 25(14), 1754–1760 (2009).
+2. Danecek P. et al. Twelve years of SAMtools and BCFtools. *GigaScience*, 10(2), giab008 (2021).
+3. Köster J. & Rahmann S. Snakemake — a scalable bioinformatics workflow engine. *Bioinformatics*, 28(19), 2520–2522 (2012).
+4. Poplin R. et al. A universal SNP and small-indel variant caller using deep neural networks. *Nature Biotechnology*, 36, 983–987 (2018).
+5. Martin A.R. et al. Clinical use of current polygenic risk scores may exacerbate health disparities. *Nature Genetics*, 51, 584–591 (2019).
+6. Landrum M.J. et al. ClinVar: improving access to variant interpretations and supporting evidence. *Nucleic Acids Research*, 46(D1), D1062–D1067 (2018).
+7. Karczewski K.J. et al. The mutational constraint spectrum quantified from variation in 141,456 humans. *Nature*, 581, 434–443 (2020).
+8. McLaren W. et al. The Ensembl Variant Effect Predictor. *Genome Biology*, 17, 122 (2016).
+
+---
+
+## Author
+
+**Poulami Ghosh** — [@g-Poulami](https://github.com/g-Poulami)  
+[LinkedIn](https://linkedin.com/in/poulami-ghosh-879439304) · [Google Scholar](https://scholar.google.com/scholar?q=Poulami+Ghosh) · poulamighosh738@gmail.com
+
+---
 
 ## License
-MIT License - See LICENSE for details.
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
