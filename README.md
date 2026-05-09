@@ -4,7 +4,7 @@
 [![Snakemake](https://img.shields.io/badge/Workflow-Snakemake-green?style=flat-square)](https://snakemake.readthedocs.io/)
 [![BWA-MEM](https://img.shields.io/badge/Aligner-BWA--MEM-purple?style=flat-square)](http://bio-bwa.sourceforge.net/)
 [![BCFtools](https://img.shields.io/badge/Variant%20Caller-BCFtools-red?style=flat-square)](https://samtools.github.io/bcftools/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI Status](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml/badge.svg)](https://github.com/g-Poulami/GenEquityFlow/actions/workflows/main.yml)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
 
